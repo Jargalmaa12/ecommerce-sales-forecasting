@@ -1,43 +1,91 @@
-# 🛒 E-Commerce Sales Forecasting  
+🛒 E-Commerce Sales Forecasting
+📌 Project Overview
 
-## 📌 Project Overview  
-This project focuses on forecasting future sales for an e-commerce platform using real transaction data.  
-The goal is to help businesses optimize **inventory, marketing campaigns, and revenue planning** by predicting sales trends with **time series and machine learning models**.  
+This project focuses on forecasting future sales for an e-commerce / FMCG platform using real transaction data.
+The goal is to help businesses optimize inventory, marketing campaigns, and revenue planning by predicting sales trends with time series and machine learning models.
 
-## 🎯 Objectives  
-- Clean and prepare raw sales data  
-- Explore seasonal trends, spikes, and anomalies  
-- Build forecasting models (ARIMA, Prophet, XGBoost)  
-- Compare model performance with metrics (MAE, RMSE, MAPE)  
-- Develop an interactive dashboard to visualize predictions  
-- Translate technical results into **business insights**  
+🎯 Objectives
 
-## 📂 Project Structure  
+Clean and prepare raw sales data
+
+Explore seasonal trends, spikes, and anomalies
+
+Build forecasting models (ARIMA, Prophet, XGBoost)
+
+Compare model performance with metrics (MAE, RMSE, MAPE)
+
+Develop an interactive Streamlit dashboard to visualize predictions
+
+Translate technical results into business insights
+
+📂 Project Structure
 ecommerce-sales-forecasting/
-│── data/ # raw and processed datasets
-│── notebooks/ # Jupyter notebooks (EDA, modeling, forecasting)
-│── visuals/ # charts, plots, screenshots
-│── dashboard/ # Streamlit / Power BI files
-│── README.md # project documentation
+│── data/          # raw and processed datasets
+│── notebooks/     # Jupyter notebooks (EDA, modeling, forecasting)
+│── dashboard/     # Streamlit app files
+│── visuals/       # charts, plots, screenshots
 │── requirements.txt # Python dependencies
+│── README.md      # project documentation
 
-## 🛠 Tools & Technologies  
-- **Python** (pandas, numpy, scikit-learn, statsmodels, XGBoost, Prophet)  
-- **Visualization**: matplotlib, seaborn, plotly  
-- **Dashboard**: Streamlit / Tableau / Power BI  
-- **GitHub** for version control & portfolio showcase  
+🛠 Tools & Technologies
 
-## 📊 Planned Workflow  
-1. **Data Preparation** – Clean and preprocess transaction data  
-2. **Exploratory Data Analysis (EDA)** – Identify seasonality, trends, anomalies  
-3. **Modeling & Forecasting** – Compare ARIMA, Prophet, XGBoost models  
-4. **Visualization & Dashboard** – Build interactive forecasts  
-5. **Business Insights** – Translate predictions into actionable strategies  
+Python (pandas, numpy, scikit-learn, statsmodels, XGBoost, Prophet)
 
-## 🚀 Status  
-🔄 Work in progress – Data preparation and EDA phase.  
+Visualization: matplotlib, seaborn, plotly
 
-## 📈 Future Improvements  
-- Add holiday/promotion features to improve forecasts  
-- Build category-level sales forecasts  
-- Deploy dashboard for live predictions  
+Dashboard: Streamlit
+
+Version Control: GitHub
+
+📊 Workflow
+
+Data Preparation – Cleaned and aggregated daily sales
+
+Exploratory Data Analysis (EDA) – Identified seasonality, trends, anomalies
+
+Modeling & Forecasting – Implemented ARIMA, Prophet, XGBoost
+
+Dashboard – Interactive app for forecasts & model comparison
+
+Insights – Translated results into actionable business strategies
+
+🔮 Model Comparison
+Model	Strengths	Limitations
+Prophet	Captures trend + seasonality, produces realistic future patterns	Assumes seasonality continues unchanged
+ARIMA	Strong for short-term forecasts	Weaker at handling strong seasonality, degrades in long horizons
+XGBoost	Very accurate in validation (low RMSE/MAE), learns from lag features	In future forecasting, predictions flatten (steady line) because lag values repeat beyond dataset
+
+✅ Business Takeaway:
+
+Use Prophet for long-term planning (inventory, marketing).
+
+Use XGBoost for short-term weekly demand predictions.
+
+Hybrid Prophet + XGBoost could provide the best of both worlds.
+
+📈 Dashboard Preview
+
+The interactive Streamlit app lets users:
+
+Select forecasting model (Prophet / ARIMA / XGBoost)
+
+Adjust forecast horizon (30–180 days)
+
+Compare model performance (RMSE, MAE, MAPE)
+
+Switch between validation mode and future forecasting mode
+
+👉 Try it live: [Streamlit App Link]
+
+🚀 Status
+
+✅ Modeling completed and dashboard deployed.
+🔄 Future work: experiment with hybrid models, add holiday/promotion effects.
+
+📌 Key Learning Outcomes
+
+Built an end-to-end ML forecasting pipeline
+
+Understood trade-offs between classical time-series and ML models
+
+Deployed results in an interactive app for business use
