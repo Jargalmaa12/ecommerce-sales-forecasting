@@ -69,7 +69,7 @@ Below are some patterns observed in sales:
 ![Monthly Revenue](visuals/monthly_boxplot.png)  
 
 
-## 🚀 Status & Next Steps  
+## 🚀 Next Steps  
 - ✅ Models are trained, tested, and the app is live  
 - 🔄 Next, I’d like to experiment with hybrid approaches and add holiday/promotion effects into the forecasts  
 
