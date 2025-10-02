@@ -56,7 +56,8 @@ The dashboard makes it easy to:
 
 ![Dashboard Screenshot](visuals/Screenshot4.PNG)  
 
-👉 **Live App:** [E-Commerce Forecasting Dashboard](https://ecommerce-sales-forecasting-muvi4tfwfefncf77qxlnvt.streamlit.app/)  
+[**Live Forecasting Dashboard**](https://ecommerce-sales-forecasting-muvi4tfwfefncf77qxlnvt.streamlit.app/)  
+
 
 ## 🚀 Status & Next Steps  
 - ✅ Models are trained, tested, and the app is live  
