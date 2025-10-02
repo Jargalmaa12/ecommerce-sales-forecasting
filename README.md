@@ -12,13 +12,17 @@ This project is about predicting future sales for an e-commerce / FMCG business 
 - Wrote up insights to explain not just “what the models predicted” but **what that means for business**  
 
 ## 📂 Project Layout  
+
+
+```text
 ecommerce-sales-forecasting/
-├── data/ # datasets
-├── notebooks/ # EDA + model training
-├── dashboard/ # Streamlit app
-├── visuals/ # charts and screenshots
+├── data/           # datasets
+├── notebooks/      # EDA + model training
+├── dashboard/      # Streamlit app
+├── visuals/        # charts and screenshots
 ├── requirements.txt
 └── README.md
+
 
 ## 🛠 Tools Used  
 - **Python** (pandas, numpy, scikit-learn, statsmodels, XGBoost, Prophet)  
