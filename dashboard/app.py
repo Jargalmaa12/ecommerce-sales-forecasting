@@ -21,10 +21,7 @@ st.sidebar.header("⚙️ Settings")
 mode = st.sidebar.radio("Select Mode:", ["Validation (Train/Test Split)", "Forecast Future"])
 model_choice = st.sidebar.selectbox("Select Model:", ["Prophet", "SARIMA", "XGBoost"])
 horizon = st.sidebar.slider("Forecast horizon (days):", 30, 180, 90)
-st.subheader("Exploratory Data Analysis")
-st.image("visuals/daily_trend.png")
-st.image("visuals/moving_avg.png")
-st.image("visuals/monthly_boxplot.png")
+
 
 # --- Helper function ---
 def evaluate(y_true, y_pred):
