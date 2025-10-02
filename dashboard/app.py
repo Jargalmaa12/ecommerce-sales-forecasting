@@ -1,154 +1,140 @@
-# 📊 FMCG Sales Forecasting Dashboard (Prophet, ARIMA, XGBoost + Comparison)
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-import os
 import matplotlib.pyplot as plt
-
-# Models
-import statsmodels.api as sm
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from prophet import Prophet
+import statsmodels.api as sm
 from xgboost import XGBRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from math import sqrt
+import datetime
 
-# --- Load dataset ---
-data_path = os.path.join("data", "FMCG_2022_2024.csv")
-df = pd.read_csv(data_path)
+# --- Load data ---
+data_path = "data/FMCG_2022_2024.csv"  # adjust if different
+df = pd.read_csv(data_path, parse_dates=["date"])
+df = df.sort_values("date")
+daily = df.groupby("date")["units_sold"].sum().reset_index()
+daily = daily.rename(columns={"date":"ds", "units_sold":"y"})  # Prophet requires ds, y
 
-df['date'] = pd.to_datetime(df['date'])
-df['revenue'] = df['units_sold'] * df['price_unit']
-
-daily = (
-    df.groupby('date')['revenue']
-    .sum()
-    .reset_index()
-    .rename(columns={'revenue':'daily_revenue'})
-)
-
-# --- Streamlit UI ---
-st.title("🛒 FMCG Sales Forecasting Dashboard")
-st.write("Forecast future sales using **Prophet, ARIMA, or XGBoost** models.")
-
-# Sidebar settings
+# --- Sidebar ---
 st.sidebar.header("⚙️ Settings")
-model_choice = st.sidebar.selectbox("Select Model", ["Prophet", "ARIMA", "XGBoost", "Compare All"])
+mode = st.sidebar.radio("Select Mode:", ["Validation (Train/Test Split)", "Forecast Future"])
+model_choice = st.sidebar.selectbox("Select Model:", ["Prophet", "ARIMA", "XGBoost"])
 horizon = st.sidebar.slider("Forecast horizon (days):", 30, 180, 90)
 
-# Train/test split
-train = daily.iloc[:-horizon]
-test = daily.iloc[-horizon:]
-
-# Evaluation function
+# --- Helper functions ---
 def evaluate(y_true, y_pred):
-    rmse = sqrt(mean_squared_error(y_true, y_pred))
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     mae = mean_absolute_error(y_true, y_pred)
     mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-    return {"RMSE": rmse, "MAE": mae, "MAPE": mape}
+    return rmse, mae, mape
 
-# --- Run Selected Model ---
-results = {}
+# --- Validation Mode ---
+if mode == "Validation (Train/Test Split)":
+    st.subheader("📊 Validation Mode (Train/Test Split)")
+    split_date = daily["ds"].max() - pd.Timedelta(days=horizon)
+    train = daily[daily["ds"] <= split_date]
+    test = daily[daily["ds"] > split_date]
 
-if model_choice == "Prophet":
-    prophet_df = train.rename(columns={'date':'ds','daily_revenue':'y'})
-    model = Prophet(yearly_seasonality=True)
-    model.fit(prophet_df)
+    if model_choice == "Prophet":
+        model = Prophet()
+        model.fit(train)
+        future = model.make_future_dataframe(periods=horizon)
+        forecast = model.predict(future)
+        preds = forecast.set_index("ds").loc[test["ds"], "yhat"]
+        rmse, mae, mape = evaluate(test["y"], preds)
 
-    future = model.make_future_dataframe(periods=horizon)
-    forecast = model.predict(future)
+        st.line_chart(pd.DataFrame({"Train":train.set_index("ds")["y"],
+                                    "Test":test.set_index("ds")["y"],
+                                    "Forecast":preds}))
 
-    forecast_prophet = forecast[['ds','yhat']].set_index('ds').loc[test['date']]
-    results['Prophet'] = evaluate(test['daily_revenue'], forecast_prophet['yhat'])
+    elif model_choice == "ARIMA":
+        arima_model = sm.tsa.ARIMA(train["y"], order=(5,1,2))
+        arima_fit = arima_model.fit()
+        preds = arima_fit.forecast(steps=len(test))
+        rmse, mae, mape = evaluate(test["y"].values, preds)
 
-    # Plot
-    fig, ax = plt.subplots(figsize=(12,6))
-    ax.plot(train['date'], train['daily_revenue'], label="Train")
-    ax.plot(test['date'], test['daily_revenue'], label="Test", color="black")
-    ax.plot(forecast_prophet.index, forecast_prophet['yhat'], label="Prophet Forecast", color="red")
-    ax.fill_between(forecast['ds'], forecast['yhat_lower'], forecast['yhat_upper'], alpha=0.3, color="red")
-    ax.legend()
-    st.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(12,5))
+        ax.plot(train["ds"], train["y"], label="Train")
+        ax.plot(test["ds"], test["y"], label="Test")
+        ax.plot(test["ds"], preds, label="ARIMA Forecast")
+        ax.legend()
+        st.pyplot(fig)
 
-elif model_choice == "ARIMA":
-    model = sm.tsa.ARIMA(train['daily_revenue'], order=(5,1,2))
-    arima_fit = model.fit()
-    forecast_arima = arima_fit.forecast(steps=horizon)
-    results['ARIMA'] = evaluate(test['daily_revenue'], forecast_arima)
+    elif model_choice == "XGBoost":
+        # Feature engineering (lag features)
+        lagged = daily.copy()
+        lagged["lag1"] = lagged["y"].shift(1)
+        lagged = lagged.dropna()
 
-    fig, ax = plt.subplots(figsize=(12,6))
-    ax.plot(train['date'], train['daily_revenue'], label="Train")
-    ax.plot(test['date'], test['daily_revenue'], label="Test", color="black")
-    ax.plot(test['date'], forecast_arima, label="ARIMA Forecast", color="red")
-    ax.legend()
-    st.pyplot(fig)
+        train = lagged[lagged["ds"] <= split_date]
+        test = lagged[lagged["ds"] > split_date]
 
-elif model_choice == "XGBoost":
-    lag_df = daily.copy()
-    for lag in [1,7,30]:
-        lag_df[f"lag_{lag}"] = lag_df['daily_revenue'].shift(lag)
+        model = XGBRegressor(n_estimators=100)
+        model.fit(train[["lag1"]], train["y"])
+        preds = model.predict(test[["lag1"]])
+        rmse, mae, mape = evaluate(test["y"].values, preds)
 
-    lag_df = lag_df.dropna()
-    train_lag = lag_df.iloc[:-horizon]
-    test_lag = lag_df.iloc[-horizon:]
+        fig, ax = plt.subplots(figsize=(12,5))
+        ax.plot(train["ds"], train["y"], label="Train")
+        ax.plot(test["ds"], test["y"], label="Test")
+        ax.plot(test["ds"], preds, label="XGBoost Forecast")
+        ax.legend()
+        st.pyplot(fig)
 
-    X_train, y_train = train_lag.drop(['date','daily_revenue'], axis=1), train_lag['daily_revenue']
-    X_test, y_test = test_lag.drop(['date','daily_revenue'], axis=1), test_lag['daily_revenue']
+    st.subheader("📉 Model Performance")
+    st.write(f"**RMSE:** {rmse:.2f}")
+    st.write(f"**MAE:** {mae:.2f}")
+    st.write(f"**MAPE:** {mape:.2f}%")
 
-    xgb = XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=5)
-    xgb.fit(X_train, y_train)
-    forecast_xgb = xgb.predict(X_test)
+# --- Future Forecast Mode ---
+else:
+    st.subheader("🔮 Future Forecast Mode (Beyond Dataset)")
+    if model_choice == "Prophet":
+        model = Prophet()
+        model.fit(daily)
+        future = model.make_future_dataframe(periods=horizon)
+        forecast = model.predict(future)
 
-    results['XGBoost'] = evaluate(y_test, forecast_xgb)
+        fig, ax = plt.subplots(figsize=(12,5))
+        ax.plot(daily["ds"], daily["y"], label="Actual")
+        ax.plot(forecast["ds"], forecast["yhat"], label="Forecast")
+        ax.fill_between(forecast["ds"], forecast["yhat_lower"], forecast["yhat_upper"], alpha=0.3)
+        ax.legend()
+        st.pyplot(fig)
 
-    fig, ax = plt.subplots(figsize=(12,6))
-    ax.plot(train['date'], train['daily_revenue'], label="Train")
-    ax.plot(test['date'], test['daily_revenue'], label="Test", color="black")
-    ax.plot(test_lag['date'], forecast_xgb, label="XGBoost Forecast", color="red")
-    ax.legend()
-    st.pyplot(fig)
+    elif model_choice == "ARIMA":
+        arima_model = sm.tsa.ARIMA(daily["y"], order=(5,1,2))
+        arima_fit = arima_model.fit()
+        preds = arima_fit.forecast(steps=horizon)
 
-# --- Compare All Models ---
-elif model_choice == "Compare All":
-    # Prophet
-    prophet_df = train.rename(columns={'date':'ds','daily_revenue':'y'})
-    model_p = Prophet(yearly_seasonality=True)
-    model_p.fit(prophet_df)
-    future = model_p.make_future_dataframe(periods=horizon)
-    forecast_p = model_p.predict(future)
-    forecast_prophet = forecast_p[['ds','yhat']].set_index('ds').loc[test['date']]
-    results['Prophet'] = evaluate(test['daily_revenue'], forecast_prophet['yhat'])
+        future_dates = pd.date_range(daily["ds"].max() + pd.Timedelta(days=1), periods=horizon)
+        fig, ax = plt.subplots(figsize=(12,5))
+        ax.plot(daily["ds"], daily["y"], label="Actual")
+        ax.plot(future_dates, preds, label="ARIMA Forecast")
+        ax.legend()
+        st.pyplot(fig)
 
-    # ARIMA
-    model_a = sm.tsa.ARIMA(train['daily_revenue'], order=(5,1,2))
-    arima_fit = model_a.fit()
-    forecast_arima = arima_fit.forecast(steps=horizon)
-    results['ARIMA'] = evaluate(test['daily_revenue'], forecast_arima)
+    elif model_choice == "XGBoost":
+        lagged = daily.copy()
+        lagged["lag1"] = lagged["y"].shift(1)
+        lagged = lagged.dropna()
 
-    # XGBoost
-    lag_df = daily.copy()
-    for lag in [1,7,30]:
-        lag_df[f"lag_{lag}"] = lag_df['daily_revenue'].shift(lag)
-    lag_df = lag_df.dropna()
-    train_lag = lag_df.iloc[:-horizon]
-    test_lag = lag_df.iloc[-horizon:]
-    X_train, y_train = train_lag.drop(['date','daily_revenue'], axis=1), train_lag['daily_revenue']
-    X_test, y_test = test_lag.drop(['date','daily_revenue'], axis=1), test_lag['daily_revenue']
-    xgb = XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=5)
-    xgb.fit(X_train, y_train)
-    forecast_xgb = xgb.predict(X_test)
-    results['XGBoost'] = evaluate(y_test, forecast_xgb)
+        train = lagged.copy()
+        model = XGBRegressor(n_estimators=100)
+        model.fit(train[["lag1"]], train["y"])
 
-    # Show comparison table
-    st.subheader("📊 Model Comparison")
-    results_df = pd.DataFrame(results).T
-    st.dataframe(results_df)
+        preds = []
+        last_value = train["y"].iloc[-1]
+        for _ in range(horizon):
+            next_pred = model.predict([[last_value]])[0]
+            preds.append(next_pred)
+            last_value = next_pred
 
-    # Optional: Bar plot
-    st.bar_chart(results_df['RMSE'])
+        future_dates = pd.date_range(daily["ds"].max() + pd.Timedelta(days=1), periods=horizon)
+        fig, ax = plt.subplots(figsize=(12,5))
+        ax.plot(daily["ds"], daily["y"], label="Actual")
+        ax.plot(future_dates, preds, label="XGBoost Forecast")
+        ax.legend()
+        st.pyplot(fig)
 
-# --- Show metrics for single model ---
-if model_choice != "Compare All":
-    st.subheader("📈 Model Performance")
-    for k, v in results[list(results.keys())[0]].items():
-        st.write(f"**{k}:** {v:.2f}")
+    st.info(f"Forecasting **{horizon} days beyond {daily['ds'].max().date()}** using {model_choice}")
