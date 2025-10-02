@@ -54,7 +54,7 @@ The dashboard makes it easy to:
 - Check validation metrics (RMSE, MAE, MAPE)  
 - Switch between **train/test validation** and **future forecasts**  
 
-![Dashboard Screenshot](visuals/Screenshot4.PNG)  
+Try this -> ![Dashboard Screenshot](visuals/Screenshot4.PNG)  
 
 [**Live Forecasting Dashboard**](https://ecommerce-sales-forecasting-muvi4tfwfefncf77qxlnvt.streamlit.app/)  
 ### 🔎 Exploratory Data Analysis
