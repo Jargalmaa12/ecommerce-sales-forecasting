@@ -4,21 +4,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from prophet import Prophet
-import statsmodels.api as sm
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 from xgboost import XGBRegressor
-import datetime
 
-# --- Load data ---
+# --- Load dataset ---
 data_path = "data/FMCG_2022_2024.csv"  # adjust if different
 df = pd.read_csv(data_path, parse_dates=["date"])
 df = df.sort_values("date")
 daily = df.groupby("date")["units_sold"].sum().reset_index()
-daily = daily.rename(columns={"date":"ds", "units_sold":"y"})  # Prophet requires ds, y
+daily = daily.rename(columns={"date":"ds", "units_sold":"y"})
 
 # --- Sidebar ---
 st.sidebar.header("⚙️ Settings")
 mode = st.sidebar.radio("Select Mode:", ["Validation (Train/Test Split)", "Forecast Future"])
-model_choice = st.sidebar.selectbox("Select Model:", ["Prophet", "ARIMA", "XGBoost"])
+model_choice = st.sidebar.selectbox("Select Model:", ["Prophet", "SARIMA", "XGBoost"])
 horizon = st.sidebar.slider("Forecast horizon (days):", 30, 180, 90)
 
 # --- Helper functions ---
@@ -43,41 +42,49 @@ if mode == "Validation (Train/Test Split)":
         preds = forecast.set_index("ds").loc[test["ds"], "yhat"]
         rmse, mae, mape = evaluate(test["y"], preds)
 
-        st.line_chart(pd.DataFrame({"Train":train.set_index("ds")["y"],
-                                    "Test":test.set_index("ds")["y"],
-                                    "Forecast":preds}))
+        fig, ax = plt.subplots(figsize=(12,5))
+        ax.plot(train["ds"], train["y"], label="Train")
+        ax.plot(test["ds"], test["y"], label="Test")
+        ax.plot(test["ds"], preds, label="Prophet Forecast")
+        ax.legend()
+        st.pyplot(fig)
 
-    elif model_choice == "ARIMA":
-        arima_model = sm.tsa.ARIMA(train["y"], order=(5,1,2))
-        arima_fit = arima_model.fit()
-        preds = arima_fit.forecast(steps=len(test))
+    elif model_choice == "SARIMA":
+        sarima_model = SARIMAX(train["y"], order=(1,1,1), seasonal_order=(1,1,1,7))
+        sarima_fit = sarima_model.fit(disp=False)
+        preds = sarima_fit.forecast(steps=len(test))
         rmse, mae, mape = evaluate(test["y"].values, preds)
 
         fig, ax = plt.subplots(figsize=(12,5))
         ax.plot(train["ds"], train["y"], label="Train")
         ax.plot(test["ds"], test["y"], label="Test")
-        ax.plot(test["ds"], preds, label="ARIMA Forecast")
+        ax.plot(test["ds"], preds, label="SARIMA Forecast")
         ax.legend()
         st.pyplot(fig)
 
     elif model_choice == "XGBoost":
-        # Feature engineering (lag features)
         lagged = daily.copy()
-        lagged["lag1"] = lagged["y"].shift(1)
+        for lag in [1,7,30]:
+            lagged[f"lag_{lag}"] = lagged["y"].shift(lag)
+        lagged["rolling_7"] = lagged["y"].rolling(7).mean()
+        lagged["rolling_30"] = lagged["y"].rolling(30).mean()
         lagged = lagged.dropna()
 
-        train = lagged[lagged["ds"] <= split_date]
-        test = lagged[lagged["ds"] > split_date]
+        train_l = lagged[lagged["ds"] <= split_date]
+        test_l = lagged[lagged["ds"] > split_date]
 
-        model = XGBRegressor(n_estimators=100)
-        model.fit(train[["lag1"]], train["y"])
-        preds = model.predict(test[["lag1"]])
-        rmse, mae, mape = evaluate(test["y"].values, preds)
+        X_train, y_train = train_l.drop(["ds","y"], axis=1), train_l["y"]
+        X_test, y_test = test_l.drop(["ds","y"], axis=1), test_l["y"]
+
+        model = XGBRegressor(n_estimators=300, learning_rate=0.05, max_depth=5)
+        model.fit(X_train, y_train)
+        preds = model.predict(X_test)
+        rmse, mae, mape = evaluate(y_test.values, preds)
 
         fig, ax = plt.subplots(figsize=(12,5))
-        ax.plot(train["ds"], train["y"], label="Train")
-        ax.plot(test["ds"], test["y"], label="Test")
-        ax.plot(test["ds"], preds, label="XGBoost Forecast")
+        ax.plot(train_l["ds"], y_train, label="Train")
+        ax.plot(test_l["ds"], y_test, label="Test")
+        ax.plot(test_l["ds"], preds, label="XGBoost Forecast")
         ax.legend()
         st.pyplot(fig)
 
@@ -97,43 +104,57 @@ else:
 
         fig, ax = plt.subplots(figsize=(12,5))
         ax.plot(daily["ds"], daily["y"], label="Actual")
-        ax.plot(forecast["ds"], forecast["yhat"], label="Forecast")
+        ax.plot(forecast["ds"], forecast["yhat"], label="Prophet Forecast")
         ax.fill_between(forecast["ds"], forecast["yhat_lower"], forecast["yhat_upper"], alpha=0.3)
         ax.legend()
         st.pyplot(fig)
 
-    elif model_choice == "ARIMA":
-        arima_model = sm.tsa.ARIMA(daily["y"], order=(5,1,2))
-        arima_fit = arima_model.fit()
-        preds = arima_fit.forecast(steps=horizon)
-
+    elif model_choice == "SARIMA":
+        sarima_model = SARIMAX(daily["y"], order=(1,1,1), seasonal_order=(1,1,1,7))
+        sarima_fit = sarima_model.fit(disp=False)
+        preds = sarima_fit.forecast(steps=horizon)
         future_dates = pd.date_range(daily["ds"].max() + pd.Timedelta(days=1), periods=horizon)
+
         fig, ax = plt.subplots(figsize=(12,5))
         ax.plot(daily["ds"], daily["y"], label="Actual")
-        ax.plot(future_dates, preds, label="ARIMA Forecast")
+        ax.plot(future_dates, preds, label="SARIMA Forecast")
         ax.legend()
         st.pyplot(fig)
 
     elif model_choice == "XGBoost":
         lagged = daily.copy()
-        lagged["lag1"] = lagged["y"].shift(1)
+        for lag in [1,7,30]:
+            lagged[f"lag_{lag}"] = lagged["y"].shift(lag)
+        lagged["rolling_7"] = lagged["y"].rolling(7).mean()
+        lagged["rolling_30"] = lagged["y"].rolling(30).mean()
         lagged = lagged.dropna()
 
-        train = lagged.copy()
-        model = XGBRegressor(n_estimators=100)
-        model.fit(train[["lag1"]], train["y"])
+        X = lagged.drop(["ds","y"], axis=1)
+        y = lagged["y"]
+        model = XGBRegressor(n_estimators=300, learning_rate=0.05, max_depth=5)
+        model.fit(X, y)
 
-        preds = []
-        last_value = train["y"].iloc[-1]
-        for _ in range(horizon):
-            next_pred = model.predict([[last_value]])[0]
-            preds.append(next_pred)
-            last_value = next_pred
-
+        # Recursive future forecast
+        last_row = lagged.iloc[-1].copy()
+        future_preds = []
         future_dates = pd.date_range(daily["ds"].max() + pd.Timedelta(days=1), periods=horizon)
+
+        for _ in range(horizon):
+            row = pd.DataFrame([{
+                "lag_1": last_row["y"],
+                "lag_7": last_row["lag_1"],  # approximate recursion
+                "lag_30": last_row["lag_7"], # approximate recursion
+                "rolling_7": last_row["rolling_7"],
+                "rolling_30": last_row["rolling_30"]
+            }])
+            pred = model.predict(row)[0]
+            future_preds.append(pred)
+            last_row["y"] = pred
+            last_row["lag_1"] = pred
+
         fig, ax = plt.subplots(figsize=(12,5))
         ax.plot(daily["ds"], daily["y"], label="Actual")
-        ax.plot(future_dates, preds, label="XGBoost Forecast")
+        ax.plot(future_dates, future_preds, label="XGBoost Forecast")
         ax.legend()
         st.pyplot(fig)
 
