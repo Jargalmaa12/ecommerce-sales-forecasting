@@ -28,6 +28,11 @@ def evaluate(y_true, y_pred):
     mae = mean_absolute_error(y_true, y_pred)
     mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
     return rmse, mae, mape
+st.subheader("Exploratory Data Analysis")
+st.image("visuals/daily_trend.png")
+st.image("visuals/moving_avg.png")
+st.image("visuals/monthly_boxplot.png")
+
 
 # ==============================
 # --- Validation Mode ---
