@@ -57,6 +57,16 @@ The dashboard makes it easy to:
 ![Dashboard Screenshot](visuals/Screenshot4.PNG)  
 
 [**Live Forecasting Dashboard**](https://ecommerce-sales-forecasting-muvi4tfwfefncf77qxlnvt.streamlit.app/)  
+### 🔎 Exploratory Data Analysis
+Below are some patterns observed in sales:
+
+- Daily sales trend over 2 years  
+- Moving averages (7-day, 30-day) to smooth seasonality  
+- Monthly revenue distribution  
+
+![Daily Trend](visuals/daily_trend.png)  
+![Moving Average](visuals/moving_avg.png)  
+![Monthly Revenue](visuals/monthly_boxplot.png)  
 
 
 ## 🚀 Status & Next Steps  
