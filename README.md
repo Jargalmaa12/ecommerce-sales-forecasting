@@ -21,8 +21,6 @@ ecommerce-sales-forecasting/
 │── requirements.txt # Python dependencies
 │── README.md # project documentation
 
-markdown
-Copy code
 
 ## 🛠 Tools & Technologies  
 - **Python** (pandas, numpy, scikit-learn, statsmodels, XGBoost, Prophet)  
