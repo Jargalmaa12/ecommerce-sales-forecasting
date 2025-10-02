@@ -7,7 +7,8 @@ from prophet import Prophet
 import matplotlib.pyplot as plt
 
 # --- Load dataset ---
-data_path = "FMCG_2022_2024.csv"  # put this file in the same folder as app.py
+
+data_path = os.path.join("data", "FMCG_2022_2024.csv")
 df = pd.read_csv(data_path)
 
 df['date'] = pd.to_datetime(df['date'])
