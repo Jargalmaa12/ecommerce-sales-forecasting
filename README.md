@@ -22,7 +22,7 @@ ecommerce-sales-forecasting/
 ├── visuals/        # charts and screenshots
 ├── requirements.txt
 └── README.md
-
+```
 
 ## 🛠 Tools Used  
 - **Python** (pandas, numpy, scikit-learn, statsmodels, XGBoost, Prophet)  
