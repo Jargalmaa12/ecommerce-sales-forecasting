@@ -13,15 +13,12 @@ This project is about predicting future sales for an e-commerce / FMCG business 
 
 ## 📂 Project Layout  
 ecommerce-sales-forecasting/
-│── data/ # datasets
-│── notebooks/ # EDA + model training
-│── dashboard/ # Streamlit app
-│── visuals/ # charts and screenshots
-│── requirements.txt
-│── README.md
-
-markdown
-Copy code
+├── data/ # datasets
+├── notebooks/ # EDA + model training
+├── dashboard/ # Streamlit app
+├── visuals/ # charts and screenshots
+├── requirements.txt
+└── README.md
 
 ## 🛠 Tools Used  
 - **Python** (pandas, numpy, scikit-learn, statsmodels, XGBoost, Prophet)  
