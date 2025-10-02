@@ -82,9 +82,11 @@ if mode == "Validation (Train/Test Split)":
         st.pyplot(fig)
 
     st.subheader("📉 Model Performance")
-    st.write(f"**RMSE:** {rmse:.2f}")
-    st.write(f"**MAE:** {mae:.2f}")
-    st.write(f"**MAPE:** {mape:.2f}%")
+    col1, col2, col3 = st.columns(3)
+col1.metric("RMSE", f"{rmse:.2f}")
+col2.metric("MAE", f"{mae:.2f}")
+col3.metric("MAPE", f"{mape:.2f}%" if not np.isnan(mape) else "N/A")
+
 
 # --- Future Forecast Mode ---
 else:
