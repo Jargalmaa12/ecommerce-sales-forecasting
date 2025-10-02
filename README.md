@@ -56,7 +56,7 @@ The interactive **Streamlit app** lets users:
 - Compare model performance (RMSE, MAE, MAPE)  
 - Switch between **validation mode** and **future forecasting mode**  
 
-![Dashboard Screenshot](visuals/dashboard_demo.png)  
+![Dashboard Screenshot](visuals/Screenshot 2025-10-02 at 18.07.55.png) 
 
 👉 Try it live: https://ecommerce-sales-forecasting-muvi4tfwfefncf77qxlnvt.streamlit.app/
 
