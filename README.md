@@ -40,12 +40,8 @@ ecommerce-sales-forecasting/
 ## 🔮 Model Insights  
 - **Prophet**: Best at picking up **seasonality and long-term patterns**  
 - **ARIMA**: Works fine for **short-term forecasts**, but weak for long horizons  
-- **XGBoost**: Very strong in validation, but when forecasting into the future it tends to **flatten** because it depends heavily on lag features  
+- **XGBoost**: Very strong in validation, but when forecasting into the future it tends to flatten because it depends heavily on lag features  
 
-👉 **Takeaway:**  
-- Prophet = reliable for **long-term planning**  
-- XGBoost = useful for **short-term weekly demand**  
-- A combination of the two could give the best of both worlds  
 
 ## 📈 Dashboard  
 The dashboard makes it easy to:  
@@ -68,10 +64,6 @@ Below are some patterns observed in sales:
 ![Moving Average](visuals/moving_avg.png)  
 ![Monthly Revenue](visuals/monthly_boxplot.png)  
 
-
-## 🚀 Next Steps  
-- ✅ Models are trained, tested, and the app is live  
-- 🔄 Next, I’d like to experiment with hybrid approaches and add holiday/promotion effects into the forecasts  
 
 ## 📌 What I Learned  
 - How to build an **end-to-end forecasting pipeline**  
